@@ -4,5 +4,7 @@ Look at [packages/plugin-solana-operations](https://github.com/AndreF343/eliza_d
 
 Run agent `pnpm start --characters="characters/solana-trader.character.json"`
 
+Run web-client `pnpm start:wc`
+
 ![image](https://github.com/user-attachments/assets/8a1274c8-178d-4f79-a5f7-a9d338711f13)
 
