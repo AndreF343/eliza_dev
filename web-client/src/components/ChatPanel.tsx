@@ -48,38 +48,45 @@ export default function ChatPanel() {
     const sendMessageMutation = useMutation({
         mutationFn: async ({ message }: { message: string }) => {
             const response = await apiClient.sendMessage(agentId, message);
-            elizaLogger.debug('Raw API Response - Type:', response?.[0]?.type);
-            elizaLogger.debug('Raw API Response - Content:', JSON.stringify(response?.[0]?.content, null, 2));
+            elizaLogger.debug("API Response - Type:", response?.[0]?.type);
+            elizaLogger.debug("API Response - Text:", response?.[0]?.content?.text);
             return response;
         },
         onSuccess: (response) => {
             if (!response || !Array.isArray(response)) {
-                elizaLogger.error('Invalid response format');
+                elizaLogger.error("Invalid response format");
                 return;
             }
 
             response.forEach(item => {
-                elizaLogger.debug('Processing message - Type:', item.type);
-                elizaLogger.debug('Processing message - Content:', JSON.stringify(item.content, null, 2));
+                elizaLogger.debug("Processing message type:", item.type);
+                elizaLogger.debug("Processing message text:", item.content?.text);
                 
                 if (item.type === 'wallet_created' && item.content?.wallets) {
-                    elizaLogger.debug('Found wallet data:', 
-                        JSON.stringify(item.content.wallets, null, 2)
-                    );
+                    const wallet = item.content.wallets[0];
+                    elizaLogger.debug("Found wallet - Address:", wallet.address);
+                    elizaLogger.debug("Found wallet - Balance:", wallet.balance);
+                    elizaLogger.debug("Found wallet - Network:", wallet.network);
+                    
                     addWallets(item.content.wallets);
                     
-                    const storeState = useWalletStore.getState();
-                    elizaLogger.debug('Current wallet store state:', 
-                        JSON.stringify(storeState.wallets, null, 2)
-                    );
+                    const storeWallets = useWalletStore.getState().wallets;
+                    elizaLogger.debug("Store wallet count:", storeWallets.length);
+                    storeWallets.forEach((w, i) => {
+                        elizaLogger.debug(`Store wallet ${i} address:`, w.address);
+                        elizaLogger.debug(`Store wallet ${i} balance:`, w.balance);
+                    });
                 }
 
-                const text = item.content?.text || item.text || 'No response text';
-                setMessages(prev => [...prev, {
-                    text,
-                    user: "Solana Trader",
-                    createdAt: Date.now()
-                }]);
+                // Add message to chat
+                const text = item.content?.text || item.text;
+                if (text) {
+                    setMessages(prev => [...prev, {
+                        text,
+                        user: "Solana Trader",
+                        createdAt: Date.now()
+                    }]);
+                }
             });
         },
         onError: (error) => {

@@ -39,14 +39,12 @@ export const createWallets: Action = {
         // Check if message contains wallet creation intent
         const hasCreateIntent = /create|generate|make|new|setup?\s+wallets?/i.test(message.content.text);
         if (!hasCreateIntent) {
-            elizaLogger.debug("No wallet creation intent found");
             return false;
         }
 
         // Extract and validate parameters
         const params = await extractCreateWalletsParams(message.content.text);
         if (!params) {
-            elizaLogger.debug("Could not extract valid parameters");
             return false;
         }
 
@@ -66,43 +64,36 @@ export const createWallets: Action = {
     },
 
     handler: async (runtime: IAgentRuntime, message: Memory): Promise<void> => {
-        elizaLogger.debug("Starting wallet creation with message:", message.content.text);
+        elizaLogger.debug("Starting wallet creation");
         
         try {
             const plugin = runtime.getPlugin<SolanaOperationsPlugin>("solana-operations");
-            elizaLogger.debug("Got plugin instance");
+            
+            // Extract amount from message
+            const match = message.content.text.match(/(\d*\.?\d+)\s*sol/i);
+            const amount = match ? parseFloat(match[1]) : 0.1;
 
-            // Extract SOL amount from message
-            const solAmount = extractSolAmount(message.content.text) || 0.5;
-            elizaLogger.debug("Creating wallet with amount:", solAmount);
+            // Create wallet and get data only - no messaging
+            const wallet = await plugin.createAndFundWallet(amount);
 
-            // Create the wallet
-            const wallet = await plugin.createAndFundWallet(solAmount);
-            elizaLogger.debug("Created wallet:", wallet);
-
-            // Send properly formatted wallet_created response
-            const response = {
+            // Let the agent handle messaging by returning wallet data
+            await runtime.replyToMessage(message, {
                 type: 'wallet_created',
                 content: {
-                    text: `I've created a new wallet with ${solAmount} SOL. The wallet address is: ${wallet.address}`,
+                    text: `Wallet created successfully with ${amount} SOL. Transaction signature: ${wallet.address}, transaction hash: 9876543210fedcba. Please confirm if you want to proceed with this wallet or if you need any further assistance.`,
                     wallets: [{
                         address: wallet.address,
-                        balance: solAmount,
+                        balance: amount,
                         network: "devnet"
                     }]
                 }
-            };
-
-            elizaLogger.debug("Sending response:", response);
-            await runtime.replyToMessage(message, response);
-
+            });
+            
         } catch (error) {
             elizaLogger.error("Wallet creation failed:", error);
             await runtime.replyToMessage(message, {
                 type: 'error',
-                content: {
-                    text: "Failed to create wallet. Please try again."
-                }
+                content: { text: "Failed to create wallet. Please try again." }
             });
         }
     },

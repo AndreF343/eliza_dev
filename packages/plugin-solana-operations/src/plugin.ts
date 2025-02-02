@@ -10,6 +10,7 @@ export class SolanaOperationsPlugin {
         this.walletService = new WalletService(runtime);
     }
 
+    // Only create wallet, don't send messages
     async createAndFundWallet(amount: number) {
         return this.walletService.createAndFundWallet(amount);
     }

@@ -13,7 +13,7 @@
     "Designed to handle bulk wallet operations",
     "Operates primarily on Solana devnet for testing"
   ],
-  "modelProvider": "groq",
+  "modelProvider": "openai",
   "plugins": ["solana-operations"],
   "settings": {
     "PRIVY_API_KEY": "cm6j3cabo01c8und5g0def23c",
