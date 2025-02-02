@@ -6,5 +6,6 @@ Run agent `pnpm start --characters="characters/solana-trader.character.json"`
 
 Run web-client `pnpm start:wc`
 
-![image](https://github.com/user-attachments/assets/8a1274c8-178d-4f79-a5f7-a9d338711f13)
+![problem](https://github.com/user-attachments/assets/16ffe7f2-e9ad-49e9-b6b9-3c87e40aca5a)
+
 
