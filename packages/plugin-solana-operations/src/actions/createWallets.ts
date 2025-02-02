@@ -1,20 +1,13 @@
 import {
     Action,
     elizaLogger,
-    generateText,
-    HandlerCallback,
     IAgentRuntime,
     Memory,
-    ModelClass,
 } from "@elizaos/core";
-import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import type { SolanaOperationsPlugin } from "..";
 import { extractCreateWalletsParams } from "../utils/paramExtraction";
-
-interface CreateWalletsParams {
-    count: number;
-    fundAmount?: number;
-}
+import { CreateWalletsParams, WalletInfo } from "../types";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 export const createWallets: Action = {
     name: "create_wallets",
@@ -36,65 +29,57 @@ export const createWallets: Action = {
     ],
 
     validate: async (runtime: IAgentRuntime, message: Memory): Promise<boolean> => {
-        // Check if message contains wallet creation intent
-        const hasCreateIntent = /create|generate|make|new|setup?\s+wallets?/i.test(message.content.text);
-        if (!hasCreateIntent) {
-            return false;
-        }
-
-        // Extract and validate parameters
         const params = await extractCreateWalletsParams(message.content.text);
-        if (!params) {
-            return false;
-        }
+        if (!params) return false;
 
+        const { count, fundAmount } = params;
+        
         // Validate count and amount
-        if (params.count <= 0 || params.count > 100) {
-            elizaLogger.debug("Invalid wallet count:", params.count);
+        if (count <= 0 || count > 100) {
+            elizaLogger.debug("Invalid wallet count:", count);
             return false;
         }
 
-        if (params.fundAmount && (params.fundAmount <= 0 || params.fundAmount > 1)) {
-            elizaLogger.debug("Invalid fund amount:", params.fundAmount);
+        if (fundAmount && (fundAmount <= 0 || fundAmount > 1)) {
+            elizaLogger.debug("Invalid fund amount:", fundAmount);
             return false;
         }
 
-        elizaLogger.debug("Validation passed:", params);
         return true;
     },
 
-    handler: async (runtime: IAgentRuntime, message: Memory): Promise<void> => {
+    handler: async (runtime: IAgentRuntime, message: Memory): Promise<WalletInfo[]> => {
         elizaLogger.debug("Starting wallet creation");
         
         try {
             const plugin = runtime.getPlugin<SolanaOperationsPlugin>("solana-operations");
             
-            // Extract amount from message
-            const match = message.content.text.match(/(\d*\.?\d+)\s*sol/i);
-            const amount = match ? parseFloat(match[1]) : 0.1;
+            const params = await extractCreateWalletsParams(message.content.text);
+            if (!params) throw new Error("Invalid parameters");
 
-            // Create wallet and get data only - no messaging
-            const wallet = await plugin.createAndFundWallet(amount);
-
-            // Let the agent handle messaging by returning wallet data
-            await runtime.replyToMessage(message, {
-                type: 'wallet_created',
-                content: {
-                    text: `Wallet created successfully with ${amount} SOL. Transaction signature: ${wallet.address}, transaction hash: 9876543210fedcba. Please confirm if you want to proceed with this wallet or if you need any further assistance.`,
-                    wallets: [{
-                        address: wallet.address,
-                        balance: amount,
-                        network: "devnet"
-                    }]
+            const { count, fundAmount = 0.1 } = params;
+            
+            // Create wallets and track signatures
+            const wallets = [];
+            for (let i = 0; i < count; i++) {
+                const { address, signature } = await plugin.createAndFundWallet(fundAmount);
+                wallets.push({
+                    address,
+                    balance: fundAmount * LAMPORTS_PER_SOL,
+                    network: plugin.config.network,
+                    signature // Include actual transaction signature
+                });
+                
+                if (i < count - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
-            });
+            }
+
+            return wallets;
             
         } catch (error) {
             elizaLogger.error("Wallet creation failed:", error);
-            await runtime.replyToMessage(message, {
-                type: 'error',
-                content: { text: "Failed to create wallet. Please try again." }
-            });
+            throw error;
         }
     },
 };

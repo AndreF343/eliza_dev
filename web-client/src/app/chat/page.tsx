@@ -1,5 +1,6 @@
 import ChatPanel from "@/components/ChatPanel";
 import { WalletDisplay } from "@/components/WalletDisplay";
+import { WalletCard } from "@/components/WalletCard";
 
 export default function ChatPage() {
     return (

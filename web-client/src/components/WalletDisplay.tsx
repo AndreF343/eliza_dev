@@ -2,6 +2,7 @@ import { useWalletStore } from '@/stores/walletStore';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { elizaLogger } from '@/utils/logger';
 import { useState, useEffect } from 'react';
+import { WalletCard } from './WalletCard';
 
 export function WalletDisplay() {
     const wallets = useWalletStore((state) => {
@@ -74,17 +75,18 @@ export function WalletDisplay() {
                     {wallets.map((wallet) => {
                         elizaLogger.debug('Rendering wallet:', wallet);
                         return (
-                            <div key={wallet.address} className="mb-4 p-4 border rounded">
-                                <div className="font-mono text-sm break-all">
-                                    Address: {wallet.address}
-                                </div>
-                                <div className="mt-2">
-                                    Balance: {wallet.balance} SOL
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                    Network: {wallet.network}
-                                </div>
-                            </div>
+                            // <div key={wallet.address} className="mb-4 p-4 border rounded">
+                            //     <div className="font-mono text-sm break-all">
+                            //         Address: {wallet.address}
+                            //     </div>
+                            //     <div className="mt-2">
+                            //         Balance: {wallet.balance} SOL
+                            //     </div>
+                            //     <div className="text-sm text-gray-500">
+                            //         Network: {wallet.network}
+                            //     </div>
+                            // </div>
+                            <WalletCard address={wallet.address} balance={wallet.balance} network={wallet.network} />
                         );
                     })}
                 </div>
